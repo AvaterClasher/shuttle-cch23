@@ -1,25 +1,35 @@
-use axum::routing::post;
-use axum::{Json, Router};
+use axum::{
+    routing::post,
+    Router,
+    Json
+};
+use serde::{Serialize};
 
-pub(super) fn route() -> Router {
-    Router::new().route("/", post(elf_count))
+#[derive(Serialize)]
+struct CountResponse {
+    elf: i32,
+    #[serde(rename(serialize = "elf on a shelf"))]
+    elf_on_a_shelf: i32,
+    #[serde(rename(serialize = "shelf with no elf on it"))]
+    shelf_with_no_elf_on_it: i32,
 }
 
-#[derive(serde::Serialize)]
-struct Elf {
-    elf: usize,
-    #[serde(rename = "elf on a shelf")]
-    elf_on_a_shelf: usize,
-    #[serde(rename = "shelf with no elf on it")]
-    shelf_with_no_elf_on_it: usize,
+pub fn get_routes() -> Router {
+    Router::new()
+        .route("/6", post(count_elfs))
 }
 
-async fn elf_count(body: String) -> Json<Elf> {
-    let elf_on_a_shelf = body.matches("elf on a shelf").count();
-    let shelves = body.matches("shelf").count();
-    Json(Elf {
-        elf: body.matches("elf").count(),
-        elf_on_a_shelf,
-        shelf_with_no_elf_on_it: shelves - elf_on_a_shelf,
-    })
+async fn count_elfs(body: String) -> Json<CountResponse> {
+    let count_elf = body.matches("elf").count();
+    let count_eoas = body.matches("elf on a shelf").count();
+    let count_shelf = body.matches("shelf").count();
+
+    // Format count response.
+    let res = CountResponse {
+        elf: count_elf as i32,
+        elf_on_a_shelf: count_eoas as i32,
+        shelf_with_no_elf_on_it: (count_shelf - count_eoas) as i32,
+    };
+
+    Json(res)
 }
